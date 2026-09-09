@@ -14,6 +14,7 @@ export function handleSearch(repoRoot, globalDirPath, args) {
     const query = args.query;
     if (!query)
         throw new Error("query is required");
+    const offset = Math.max(0, Math.floor(Number(args.offset) || 0));
     const words = query.split(/\s+/).filter(Boolean);
     if (words.length === 0)
         throw new Error("query is required");
@@ -78,8 +79,9 @@ export function handleSearch(repoRoot, globalDirPath, args) {
         }
     }
     results.sort((a, b) => b.score - a.score);
-    const omitted = results.length - MAX_RESULTS;
-    const bounded = results.slice(0, MAX_RESULTS);
-    return omitted > 0 ? { results: bounded, omitted } : { results: bounded };
+    const total = results.length;
+    const paged = results.slice(offset, offset + MAX_RESULTS);
+    const has_more = offset + MAX_RESULTS < total;
+    return { total, offset, has_more, results: paged };
 }
 //# sourceMappingURL=search.js.map

@@ -18,9 +18,10 @@ export function handleSearch(
   repoRoot: string,
   globalDirPath: string,
   args: Record<string, unknown>
-): { results: SearchResult[]; omitted?: number } {
+): { total: number; offset: number; has_more: boolean; results: SearchResult[] } {
   const query = args.query as string;
   if (!query) throw new Error("query is required");
+  const offset = Math.max(0, Math.floor(Number(args.offset) || 0));
 
   const words = query.split(/\s+/).filter(Boolean);
   if (words.length === 0) throw new Error("query is required");
@@ -93,8 +94,9 @@ export function handleSearch(
 
   results.sort((a, b) => b.score - a.score);
 
-  const omitted = results.length - MAX_RESULTS;
-  const bounded = results.slice(0, MAX_RESULTS);
+  const total = results.length;
+  const paged = results.slice(offset, offset + MAX_RESULTS);
+  const has_more = offset + MAX_RESULTS < total;
 
-  return omitted > 0 ? { results: bounded, omitted } : { results: bounded };
+  return { total, offset, has_more, results: paged };
 }

@@ -76,6 +76,11 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         query: { type: "string", description: "Search query" },
+        offset: {
+          type: "number",
+          description:
+            "Skip this many results (for pagination). Default 0. Use the 'total' and 'has_more' fields in the response to know if more results exist.",
+        },
       },
       required: ["query"],
     },
@@ -700,28 +705,25 @@ function routeRead(scopes: RepoScope[], args: Record<string, unknown>): unknown 
 
 function routeSearch(scopes: RepoScope[], globalDir: string, args: Record<string, unknown>): unknown {
   const emptyDir = emptyStoreDir();
-  let omitted = 0;
+  const offset = Math.max(0, Math.floor(Number(args.offset) || 0));
   const merged: Array<SearchResult & { repo?: string }> = [];
 
+  // Collect all results without pagination from each scope
   for (const scope of scopes) {
-    const res = handleSearch(scope.root, emptyDir, args);
-    omitted += res.omitted ?? 0;
+    const res = handleSearch(scope.root, emptyDir, { ...args, offset: 0 });
     for (const r of res.results) merged.push({ ...r, repo: scope.name });
   }
 
-  // One extra call for globals: repoRoot is the empty (nonexistent)
-  // directory, so only global facts can possibly match, and they are never
-  // tagged with a repo.
-  const globalRes = handleSearch(emptyDir, globalDir, args);
-  omitted += globalRes.omitted ?? 0;
+  const globalRes = handleSearch(emptyDir, globalDir, { ...args, offset: 0 });
   for (const r of globalRes.results) merged.push({ ...r });
 
   merged.sort((a, b) => b.score - a.score);
-  const mergeDrops = Math.max(0, merged.length - 20);
-  const bounded = merged.slice(0, 20);
-  const total = omitted + mergeDrops;
 
-  return total > 0 ? { results: bounded, omitted: total } : { results: bounded };
+  const total = merged.length;
+  const paged = merged.slice(offset, offset + 20);
+  const has_more = offset + 20 < total;
+
+  return { total, offset, has_more, results: paged };
 }
 
 function routeLearn(scopes: RepoScope[], args: Record<string, unknown>): unknown {
