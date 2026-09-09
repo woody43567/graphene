@@ -56,13 +56,25 @@ const TOOLS = [
   {
     name: "read",
     description:
-      "Read the context graph. No arguments returns the full index (all node names, types, summaries). With a name argument, returns the full node including outgoing edges, incoming dependents with neighbor summaries, and observations. In multi-repo sessions, index and node results include a repo field, and name accepts repo:name to disambiguate.",
+      "Read the context graph. No arguments returns the full index (all node names, types, summaries). With a name argument, returns the node with edges, dependents, and observations (truncated to snippets by default, paginated in batches of 5). Use full=true for untruncated content, obs_offset/obs_limit for pagination.",
     inputSchema: {
       type: "object" as const,
       properties: {
         name: {
           type: "string",
           description: "Node name to read. Omit for the full index. Accepts repo:name in multi-repo sessions.",
+        },
+        full: {
+          type: "boolean",
+          description: "Return full observation content instead of truncated snippets. Default false.",
+        },
+        obs_offset: {
+          type: "number",
+          description: "Skip this many observations (for pagination). Default 0.",
+        },
+        obs_limit: {
+          type: "number",
+          description: "Max observations to return. Default 5.",
         },
       },
     },

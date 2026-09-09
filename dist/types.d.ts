@@ -5,6 +5,12 @@ export interface EdgeWithNeighbor {
     reason: string | null;
     summary: string | null;
 }
+export interface ObservationSummary {
+    id: string;
+    snippet: string;
+    truncated: boolean;
+    source: string | null;
+}
 export interface NodeDetail {
     name: string;
     type: string;
@@ -13,7 +19,9 @@ export interface NodeDetail {
     covers: string[];
     last_commit: string | null;
     metadata: Record<string, unknown>;
-    observations: StoredObservation[];
+    observations: (StoredObservation | ObservationSummary)[];
+    total_observations: number;
+    has_more_observations: boolean;
     edges: EdgeWithNeighbor[];
     dependents: EdgeWithNeighbor[];
 }

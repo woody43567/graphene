@@ -1,4 +1,15 @@
 import { listNodes, readNode } from "../store.js";
+const OBS_PAGE_SIZE = 5;
+const OBS_SNIPPET_LIMIT = 300;
+function truncateObs(obs) {
+    const truncated = obs.content.length > OBS_SNIPPET_LIMIT;
+    return {
+        id: obs.id,
+        snippet: truncated ? obs.content.slice(0, OBS_SNIPPET_LIMIT) + "..." : obs.content,
+        truncated,
+        source: obs.source,
+    };
+}
 export function handleRead(repoRoot, args) {
     const name = args.name;
     if (!name) {
@@ -30,6 +41,16 @@ export function handleRead(repoRoot, args) {
             }
         }
     }
+    // Observation pagination and truncation
+    const full = args.full === true;
+    const obsOffset = Math.max(0, Math.floor(Number(args.obs_offset) || 0));
+    const obsLimit = Math.max(1, Math.floor(Number(args.obs_limit) || OBS_PAGE_SIZE));
+    const totalObs = node.observations.length;
+    const paged = node.observations.slice(obsOffset, obsOffset + obsLimit);
+    const has_more = obsOffset + obsLimit < totalObs;
+    const observations = full
+        ? paged
+        : paged.map(truncateObs);
     return {
         name: node.name,
         type: node.type,
@@ -38,7 +59,9 @@ export function handleRead(repoRoot, args) {
         covers: node.covers,
         last_commit: node.last_commit,
         metadata: node.metadata,
-        observations: node.observations,
+        observations,
+        total_observations: totalObs,
+        has_more_observations: has_more,
         edges,
         dependents,
     };
